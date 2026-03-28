@@ -44,7 +44,7 @@ healing-vocabulary-cinema/
 - requests 库（用于 API 调用）
 
 ### 安装步骤
-1. 克隆本仓库  1. 克隆本仓库：
+1. 克隆本仓库 ：
 `bash
 git clone https://github.com/githud-yang/healing-vocabulary-cinema.git
 `
