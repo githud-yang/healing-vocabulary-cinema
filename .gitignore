@@ -1,0 +1,35 @@
+# 环境文件
+.env
+venv/
+env/
+
+# Python文件
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE文件
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+
+# 日志文件
+*.log
+
+# 临时文件
+*.tmp
+*.temp
+
+# API密钥文件
+*.key
+*.secret
+
+# 依赖文件
+requirements.txt
+Pipfile.lock
