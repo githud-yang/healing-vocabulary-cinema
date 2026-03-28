@@ -1,188 +1,19 @@
 {
-  "name": "治愈系单词放映机",
-  "name_en": "Healing Vocabulary Cinema",
-  "description": "将英语单词化作治愈系爱情故事，在沉浸式感动中完成词汇记忆",
-  "description_en": "Transform English vocabulary into healing love stories for immersive vocabulary learning",
-  "version": "2.0.0",
-  "theme": "cinematic_love_story",
+  "api_key": "这里填入你的通义千问API_KEY",
+  "api_url": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
+  "model": "qwen-plus",
   "agents": [
     {
       "name": "WordAnalyzer",
-      "name_cn": "词语拆解者",
-      "description": "从单词中挖掘电影般的画面感和情感共鸣",
-      "description_en": "Extract cinematic imagery and emotional resonance from words",
-      "type": "thinker",
-      "prompt_file": "agents/word_analyzer.prompt",
-      "icon": "🎬"
+      "prompt_file": "agents/word_analyzer.prompt"
     },
     {
       "name": "StoryWriter",
-      "name_cn": "治愈系编剧",
-      "description": "创作具有文艺电影感的治愈系爱情故事",
-      "description_en": "Create cinematic healing love stories",
-      "type": "writer",
-      "prompt_file": "agents/story_writer.prompt",
-      "icon": "✍️"
+      "prompt_file": "agents/story_writer.prompt"
     },
     {
       "name": "StoryJudge",
-      "name_cn": "放映机评委",
-      "description": "从电影美学和词汇教学双重维度评审故事",
-      "description_en": "Evaluate stories from cinematic and educational perspectives",
-      "type": "judge",
-      "prompt_file": "agents/story_judge.prompt",
-      "icon": "⚖️"
+      "prompt_file": "agents/story_judge.prompt"
     }
-  ],
-  "workflow": [
-    {
-      "step": 1,
-      "name": "词语拆解",
-      "agent": "WordAnalyzer",
-      "input": {
-        "words": "{{input.words}}"
-      },
-      "output": "word_analysis",
-      "description": "分析四个单词的浪漫意象和故事融入方案"
-    },
-    {
-      "step": 2,
-      "name": "故事创作",
-      "agent": "StoryWriter",
-      "input": {
-        "word_analysis": "{{steps[0].output}}",
-        "words": "{{input.words}}"
-      },
-      "output": "story",
-      "description": "创作具有电影感的治愈系爱情故事"
-    },
-    {
-      "step": 3,
-      "name": "质量评审",
-      "agent": "StoryJudge",
-      "input": {
-        "story": "{{steps[1].output}}",
-        "words": "{{input.words}}"
-      },
-      "output": "judgment",
-      "description": "评审故事质量，85分以下需要重写"
-    },
-    {
-      "step": 4,
-      "name": "故事重写（第一次）",
-      "condition": "{{steps[2].output.score}} < 85 && {{input.rewrite_count}} < 2",
-      "agent": "StoryWriter",
-      "input": {
-        "word_analysis": "{{steps[0].output}}",
-        "words": "{{input.words}}",
-        "feedback": "{{steps[2].output.feedback}}"
-      },
-      "output": "story",
-      "description": "根据评委反馈改进故事"
-    },
-    {
-      "step": 5,
-      "name": "重新评审（第一次）",
-      "condition": "{{steps[2].output.score}} < 85 && {{input.rewrite_count}} < 2",
-      "agent": "StoryJudge",
-      "input": {
-        "story": "{{steps[3].output}}",
-        "words": "{{input.words}}"
-      },
-      "output": "final_judgment",
-      "description": "重新评审改进后的故事"
-    },
-    {
-      "step": 6,
-      "name": "故事重写（第二次）",
-      "condition": "{{steps[4].output.score}} < 85 && {{input.rewrite_count}} < 1",
-      "agent": "StoryWriter",
-      "input": {
-        "word_analysis": "{{steps[0].output}}",
-        "words": "{{input.words}}",
-        "feedback": "{{steps[4].output.feedback}}"
-      },
-      "output": "story",
-      "description": "第二次改进故事"
-    },
-    {
-      "step": 7,
-      "name": "最终评审",
-      "condition": "{{steps[4].output.score}} < 85 && {{input.rewrite_count}} < 1",
-      "agent": "StoryJudge",
-      "input": {
-        "story": "{{steps[5].output}}",
-        "words": "{{input.words}}"
-      },
-      "output": "final_judgment",
-      "description": "最终评审"
-    }
-  ],
-  "inputs": [
-    {
-      "name": "words",
-      "type": "string",
-      "description": "四个英语单词，用空格分隔",
-      "description_en": "Four English words separated by spaces",
-      "required": true,
-      "placeholder": "例如：serendipity ephemeral luminescence ethereal"
-    },
-    {
-      "name": "rewrite_count",
-      "type": "number",
-      "description": "重写次数",
-      "description_en": "Number of rewrite attempts",
-      "default": 0,
-      "hidden": true
-    }
-  ],
-  "outputs": [
-    {
-      "name": "final_story",
-      "type": "string",
-      "value": "{{steps[1].output || steps[3].output || steps[5].output}}",
-      "description": "最终生成的治愈系爱情故事"
-    },
-    {
-      "name": "score",
-      "type": "number",
-      "value": "{{steps[2].output.score || steps[4].output.score || steps[6].output.score}}",
-      "description": "故事评分（满分100）"
-    },
-    {
-      "name": "feedback",
-      "type": "string",
-      "value": "{{steps[2].output.feedback || steps[4].output.feedback || steps[6].output.feedback}}",
-      "description": "评委反馈"
-    },
-    {
-      "name": "rewrite_count",
-      "type": "number",
-      "value": "{{input.rewrite_count}}",
-      "description": "实际重写次数"
-    }
-  ],
-  "features": {
-    "vocabulary_learning": {
-      "target": "高考3500词汇、四六级词汇",
-      "method": "情境记忆法",
-      "effectiveness": "通过故事情感共鸣增强记忆"
-    },
-    "story_style": {
-      "genre": "爱情治愈系",
-      "aesthetic": "文艺电影感",
-      "references": ["新海诚动画", "《爱乐之城》", "《Before Sunrise》"],
-      "tone": "温暖、唯美、细腻"
-    },
-    "quality_control": {
-      "min_score": 85,
-      "max_rewrites": 2,
-      "criteria": ["词汇融入度", "电影感", "情感治愈力", "文艺质感"]
-    }
-  },
-  "opening_lines": [
-    "放映室的灯光已暗，外面淅沥的雨声刚好可以做背景音。请递给我 4 个你今天想要珍藏的单词。我会为你调好光影，选好配乐，让它们在一段唯美的故事里重新拥有呼吸。",
-    "欢迎推开这扇门，门铃声是今天的和弦。请在吧台留下 4 个你想要珍藏的单词。我会为你煮上一杯热茶，调好落日的色温，让这些干瘪的字母在一段治愈的相遇里'活'起来。",
-    "幕布已落，只留了一束追光。请给出 4 个你想要珍藏的单词。我来负责光影与配乐，你负责感受它们在故事里心跳的频率。"
   ]
 }
