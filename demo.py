@@ -10,9 +10,11 @@ Healing Vocabulary Cinema - Demo Script
 import json
 import os
 import sys
+import requests
+import re
 from typing import Dict, List, Any
 
-# 模拟多智能体协作系统
+# 真实多智能体协作系统 (接入通义千问)
 class HealingVocabularyCinema:
     """治愈系单词放映机主类"""
     
@@ -118,70 +120,67 @@ class HealingVocabularyCinema:
     
     def _call_agent(self, agent_name: str, inputs: Dict[str, Any]) -> Any:
         """
-        调用AI Agent（模拟）
-        
-        在实际实现中，这里会调用OpenAI API或其他大模型API
-        为了演示，我们返回模拟数据
+        调用真实大模型 API (通义千问)
         """
         agent = self.agents.get(agent_name)
         if not agent:
             raise ValueError(f"未知的Agent: {agent_name}")
         
-        # 模拟API调用延迟
-        import time
-        time.sleep(0.5)
+        # 1. 获取系统提示词 (Prompt)
+        system_prompt = agent['prompt']
         
-        # 根据Agent类型返回模拟数据
-        if agent_name == 'WordAnalyzer':
-            return self._mock_word_analysis(inputs.get('words', ''))
-        elif agent_name == 'StoryWriter':
-            return self._mock_story_generation(inputs)
-        elif agent_name == 'StoryJudge':
-            return self._mock_judgment(inputs.get('story', ''))
+        # 2. 将输入变量拼接成用户提问
+        user_content = "请根据以下信息执行任务：\n"
+        for key, value in inputs.items():
+            user_content += f"【{key}】\n{value}\n\n"
+            
+        # 3. 读取 config.json 里的 API 配置
+        api_key = self.config.get("api_key", "")
+        api_url = self.config.get("api_url", "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions")
+        model = self.config.get("model", "qwen-plus")
         
-        return {}
-    
-    def _mock_word_analysis(self, words: str) -> str:
-        """模拟词语分析"""
-        word_list = words.split()
-        analysis = []
-        for word in word_list[:4]:
-            analysis.append(f"- **{word}**: 已分析其词源、意象和融入方案")
-        return "\n".join(analysis)
-    
-    def _mock_story_generation(self, inputs: Dict) -> str:
-        """模拟故事生成"""
-        words = inputs.get('words', '').split()[:4]
-        word_str = ', '.join([f"**{w}**" for w in words])
-        
-        story = f"""🎬 **《霓虹灯下的邂逅》**
+        if not api_key or "填入" in api_key or api_key == "YOUR_API_KEY_HERE":
+            raise ValueError("请先在 config.json 中配置你真实的 API_KEY！")
 
-雨后的街道泛着微光，空气中弥漫着湿润的青草香。林夕推开那扇挂着铜铃的木门，走进了街角那家名为 {word_str.split(',')[0] if words else '**Serendipity**'} 的黑胶唱片行。
-
-店里正放着一首老爵士，暖黄的灯光落在满墙的唱片封面上。她随手抽出一张，封面上写着 {word_str.split(',')[1] if len(words) > 1 else '**Ephemeral**'} ——一支她从未听过的独立乐队。
-
-"那是我的最爱。"一个声音从阴影处传来...
-
-[故事正文包含4个单词的自然融入，400-600字]
-
----
-📖 **【放映机词汇卡】**
-"""
-        for word in words:
-            story += f"- **{word}** - 词性：[释义] ✧ 记忆联想：[诗意线索]\n"
-        
-        return story
-    
-    def _mock_judgment(self, story: str) -> Dict[str, Any]:
-        """模拟评审"""
-        import random
-        score = random.randint(88, 95)
-        
-        return {
-            'score': score,
-            'feedback': f"这是一个极具电影感的故事。词汇融入自然，画面描写细腻，情感真挚温暖。评分：{score}/100",
-            'passed': score >= 85
+        # 4. 发送网络请求给大模型
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}"
         }
+        payload = {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_content}
+            ],
+            "temperature": 0.7
+        }
+        
+        print(f"  [网络呼叫] 正在联系 {agent_name} (这可能需要几秒钟)...")
+        try:
+            response = requests.post(api_url, headers=headers, json=payload, timeout=60)
+            response.raise_for_status() # 检查是否发生网络错误
+        except Exception as e:
+            error_msg = response.text if 'response' in locals() else str(e)
+            raise Exception(f"大模型调用失败: {error_msg}")
+            
+        result_text = response.json()['choices'][0]['message']['content']
+        
+        # 5. 特殊处理：如果是评审员(StoryJudge)，需要提取分数并返回字典结构
+        if agent_name == 'StoryJudge':
+            # 用正则提取大模型回答中的数字作为分数
+            scores = re.findall(r'\d+', result_text)
+            # 过滤掉不合理的数字，取最后一个小于等于100的数字
+            valid_scores = [int(s) for s in scores if int(s) <= 100]
+            score = valid_scores[-1] if valid_scores else 80 
+            
+            return {
+                'score': score,
+                'feedback': result_text
+            }
+            
+        # 其他 Agent 直接返回大模型生成的文本
+        return result_text
 
 
 def main():
@@ -225,7 +224,6 @@ def main():
         print(f"\n❌ 运行出错：{e}")
         import traceback
         traceback.print_exc()
-
 
 if __name__ == "__main__":
     main()
